@@ -40,12 +40,13 @@ def symetrise_liste(lst) :
     copie_lst = list(lst)
     for i in range(2, len(copie_lst)+1) : lst.append(copie_lst[-i])
 
-
 def init_bonus() :
     """
 
     - Précondition: //
-    - Postcondition: "plt_bonus" -> list
+
+    - Postcondition: 
+        * "plt_bonus" -> list ;
 
     Q1) Initialise le plateau des bonus
 
@@ -75,20 +76,26 @@ def init_jetons() :
     """
 
     - Précondition: //
-    - Postcondition: "plt_jetons" -> list
+
+    - Postcondition: 
+        * "plt_jetons" -> list ;
 
     Q2) Initialise le plateau des jetons
+
     """
 
-    plt_jetons = [ [" " for x in range(TAILLE_PLATEAU)] for y in range(TAILLE_PLATEAU) ]
+    plt_jetons = [ [" "] * TAILLE_PLATEAU for y in range(TAILLE_PLATEAU) ]
 
     return plt_jetons
 
 def dizaine(n):
     """
 
-    - Précondition: "n" -> int
-    - Postcondition: "position" -> str
+    - Précondition: 
+        * "n" -> int ;
+
+    - Postcondition: 
+        * "position" -> str ;
 
     Q3.bis) Détecte une dizaine et adapte la plt_longueur du nombre
 
@@ -102,7 +109,9 @@ def dizaine(n):
 def affiche_jetons(j) :
     """
 
-    - Précondition: "j" -> list
+    - Précondition: 
+        * "j" -> list ;
+
     - Postcondition: //
 
     Q4) Affichage des jetons et bonus sur le plateau de coordonnées (x, y)
@@ -193,44 +202,55 @@ def init_pioche_alea():
     """
 
     - Précondition: //
+
     - Postcondition: 
         * "liste_alea_jetons" -> list ;
 
     Q7) Générer une liste aléatoire de jetons: où (A, Z) forcément une fois + 74 autres caracs majs + 2 jokers
     
     """
+
+    # On initialisé la liste des jetons par les 2 JOKERS
     liste_alea_jetons = [JOKER] * 2
 
+    # On récupère les 26 lettres de l'alphabet à coup sur
     for i in range(26):
-        liste_alea_jetons.append( chr( ord("A") + i ) )
+        lettre = chr( ord("A") + i )
+        liste_alea_jetons.append( lettre )
 
+    # On récupère 74 autres lettres piochées aléatoirement
     for j in range(74):
-        lettre_aleatoire = chr(random.randint(ord("A"), ord("Z")))
+        lettre_aleatoire = chr( random.randint( ord("A"), ord("Z") ) )
         liste_alea_jetons.append( lettre_aleatoire )
 
-    # Si on souhaite randomiser 2 fois. (avec les indices = positions)
+    # Si on souhaite randomiser 2 fois. (avec les indices = positions), notamment pour les tests
     random.shuffle(liste_alea_jetons)
 
     return liste_alea_jetons
 
 def piocher(x, sac):
     """
+
     - Préconditions: 
         * "x" -> int ; 
         * "sac" -> list ;
+
     - Postcondition: 
         * "pioche" -> list ;
 
     Q8) Pioche au hasard "x" jetons dans le "sac"
+
     """
     pioche = []
 
     for i in range(x):
-        index_rand = random.randint(0, len(sac)-1)
+        # On choisit un jeton aléatoirement dans le sac
+        index_rand = random.randint( 0, len(sac) - 1 )
         jeton = sac[index_rand]
 
         pioche.append(jeton)
-
+        
+        # On retire ce même jeton du sac
         sac.remove(jeton)
     
     return pioche
@@ -240,12 +260,14 @@ def completer_main(main, sac):
 
     - Préconditions: 
         * "main" & "sac" -> list ;
+
     - Postcondition: //
 
     Q9) Complète la "main" du joueur pour qu'il aie 7 jetons (si possible)
 
     """
 
+    # Si notre main n'est pas complété et qu'il reset des jetons, on remplie notre main une par une
     while len(main) < 7 and len(sac) > 0:
         main += piocher(1, sac)
 
@@ -254,6 +276,7 @@ def echanger(jetons, main, sac):
 
     - Préconditions: 
         * "jetons" & "main" & "sac" -> list ; 
+
     - Postcondition: 
         * "success" -> bool ;
 
@@ -261,14 +284,17 @@ def echanger(jetons, main, sac):
     d'échanger ("jetons") contre ceux du "sac" (si possible)
 
     """
-    success = len(sac) >= 7
+
+    # S'il y a assez de jetons dans le sac, alors l'échange peut commencer
+    success = len(sac) >= len(jetons)
 
     temp_sac = []
 
     i = 0
     while success and i < len(jetons):
+        # On vérifie que le jeton proposé est bien dans la main, si c'est le cas, l'échange réussi
         jeton = jetons[i]
-        success = success and jeton in main
+        success = jeton in main
 
         if success:
             main.remove(jeton)
@@ -277,9 +303,12 @@ def echanger(jetons, main, sac):
         i += 1
     
     if success:
-        main += piocher(len(jetons), sac)
+        # On repioche l'équivalent de jetons échangés SACHANT qu'on a pas encore remis les jetons
+        # échangés dans le sac
+        main += piocher( len(jetons), sac )
         sac += temp_sac
     else:
+        # On redonne l'équivalent perdu
         main += temp_sac
 
     return success
@@ -304,11 +333,13 @@ def select_mot_initiale(motsfr, let):
     - Préconditions: 
         "motsfr" -> list ; 
         "let" -> str ;
-    - Postcondition: "motsfr_let" -> list
+
+    - Postcondition: 
+        * "motsfr_let" -> list ;
 
     Q13) Renvoie tous les mots possibles du scrabble où la lettre "let" est au début du mot.
 
-    >>> len( select_mot_initiale( generer_dictfr(), "Z") )
+    >>> len( select_mot_initiale(generer_dictfr(), "Z") )
     229
 
     """
@@ -316,7 +347,8 @@ def select_mot_initiale(motsfr, let):
     motsfr_let = []
 
     for mot in motsfr:
-        if mot[0].lower() == let.lower():
+        # On vérifie si la première lettre du mot est celle cherchée en paramètre
+        if mot[0] == let.upper():
             motsfr_let.append(mot)
 
     return motsfr_let
@@ -341,15 +373,18 @@ def select_mot_longueur(motsfr, lgr):
 
     return motsfr_lgr
 
-def mot_jouable(mot, ll, check_joker=True):
+def mot_jouable(mot, ll, check_joker = True):
     """
 
     - Préconditions: 
-        "mot" -> str ; 
-        "ll" -> list ;
-    - Postcondition: "success" -> bool
+        * "mot" -> str ; 
+        * "ll" -> list ;
+        * "check_joker" -> bool ; <optionnel>
 
-    Q15 & 16) Permet de savoir si on peut écrire le "mot" à l'aide des lettres dans "ll" (en comptant les jokers)
+    - Postcondition: 
+        * "success" -> bool ;
+
+    Q15 & 17) Permet de savoir si on peut écrire le "mot" à l'aide des lettres dans "ll" (en comptant les jokers)
 
     >>> mot_jouable("PATATE", ["P", "T", "A", "Z", "C", "B", "?"])
     False
@@ -387,7 +422,7 @@ def mots_jouables(motsfr, ll):
     - Préconditions: "motsfr" & "ll" -> list ;
     - Postcondition: "liste_mots" -> list
 
-    Q17) Renvoie la liste des mots qu'on peut faire avec les lettres de notre main ("ll")
+    Q16) Renvoie la liste des mots qu'on peut faire avec les lettres de notre main ("ll")
     
     """
     liste_mots = []
@@ -399,12 +434,16 @@ def mots_jouables(motsfr, ll):
     
     return liste_mots
 
+# TODO : REFAIRE CORRECTEMENT
 def generer_mots_jouables(lettres_main, lettres_plateau, nb_lettres_manquantes):
     """
+
     - Préconditions: 
-        "lettres_main" & lettres_plateau -> list ; 
-        "nb_lettres_manquantes" -> int ;
-    - Postcondition: "liste_mots_jouables" -> list
+        * "lettres_main" & lettres_plateau -> list ; 
+        * "nb_lettres_manquantes" -> int ;
+
+    - Postcondition: 
+        * "liste_mots_jouables" -> list ;
 
     Q18) Genere une liste de mots jouables avec "les lettre du plateau", "les lettres de notre main" 
     avec un certain "nombre de lettres manquantes"
@@ -457,8 +496,11 @@ def generer_dico() :
 def init_pioche(dico):
     """
     
-    - Précondition: "dico" -> dict
-    - Postcondition: "pioche" -> list
+    - Précondition: 
+        * "dico" -> dict ;
+
+    - Postcondition: 
+        * "pioche" -> list ;
 
     Q20) Initialise la pioche
     >>> dico = generer_dico()
@@ -475,6 +517,7 @@ def init_pioche(dico):
 
     return pioche
 
+# Fonction obsolete
 # def valeur_mot(mot, dico):
 #     """
     
@@ -501,9 +544,11 @@ def init_pioche(dico):
 def meilleur_mot(motsfr, ll, dico):
     """
     - Préconditions:
-        "dico" -> dict ;
-        "motsfr" & "ll" -> list ;
-    - Postcondition: "meilleur_mot" -> str
+        * "dico" -> dict ;
+        * "motsfr" & "ll" -> list ;
+
+    - Postcondition: 
+        * "meilleur_mot" -> str ;
 
     Q23) Détermine le meilleur mot jouable
     >>> motsfr = ["COURIR", "PIED", "DEPIT", "TAPIR", "MARCHER"]
@@ -550,6 +595,7 @@ def meilleurs_mots(motsfr, ll, dico):
     """
     mots = mots_jouables(motsfr, ll)
 
+    # On détermine à l'avance la meilleure valeur
     meilleure_valeur = valeur_mot( meilleur_mot(motsfr, ll, dico), dico )
 
     meilleurs_mots = []
@@ -562,11 +608,13 @@ def meilleurs_mots(motsfr, ll, dico):
 
 # PARTIE 5 : PREMIER PROGRAMME PRINCIPAL #############################################
 
+# TODO: vérifier si c'est vraiment ca
 def fin_de_partie(main, sac):
     """
 
     - Préconditions: 
         * "main" & "sac" -> list ;
+
     - Postcondition: 
         * "fin" -> bool ;
 
@@ -587,6 +635,7 @@ def detection_prochain_joueur(tours, joueurs):
     - Préconditions:
         * "tours" -> int ;
         * "joueurs" -> dict ;
+
     - Postcondition: 
         * "joueur" -> int ;
 
@@ -604,10 +653,14 @@ def detection_prochain_joueur(tours, joueurs):
 
     nombre_joueurs = len(joueurs)
 
+    # On se permet de récupérer dans le bon ordre les "ids" / "numéros" des joueurs
     numeros_joueurs = list( joueurs.keys() )
+
+    # On sait à l'avance qu'au tour = 0, c'est le joueur à l'indice 0 qui commence, il n'y a plus
+    # qu'a créé une "périodicité" pour chaque tour
     indice = tours % nombre_joueurs
     
-    return numeros_joueurs[ indice ]
+    return numeros_joueurs[indice]
 
 def pioche_sans_joker(nom_joueur, sac):
     """
@@ -615,12 +668,14 @@ def pioche_sans_joker(nom_joueur, sac):
     - Préconditions:
         * "nom_joueur" -> str ;
         * "sac" -> list ;
+
     - Postcondition: 
         * "lettre" -> str ;
 
     Q28.bis) Permet l'affichage et la pioche d'une lettre dans le sac QUI N'EST PAS UN JOKER
 
     """
+
     lettre = piocher(1, sac)[0]
     print(f"[ORDRE PASSAGE] Le Joueur {nom_joueur} vous avez pioché : {lettre}")
     while lettre == JOKER:
@@ -635,6 +690,7 @@ def refaire_jouer(nom_J1, nom_J2, liste_deltas, sac):
     - Préconditions:
         * "nom_J1" & "nom_J2" -> str ;
         * "liste_deltas" & "sac" -> list ;
+
     - Postconditions: 
         * "(delta_J1, delta_J2)" -> tuple ;
 
@@ -644,6 +700,7 @@ def refaire_jouer(nom_J1, nom_J2, liste_deltas, sac):
     lettre_J1 = None
     lettre_J2 = None
 
+    # Si on arrive ici, c'est que lettre_J1 et lettre_J2 sont égales (par définition)
     lettres_egales = True
     while lettres_egales:
         # Affichage
@@ -660,6 +717,7 @@ def refaire_jouer(nom_J1, nom_J2, liste_deltas, sac):
         lettre_J2 = pioche_sans_joker(nom_J2, sac)
         delta_J2 = ord(lettre_J2) - ord("A")
 
+        # Si c'est une lettre qui a déjà été pioché, ou que c'est la même que le joueur contre qui on joue
         lettres_egales = delta_J1 in liste_deltas or delta_J2 in liste_deltas or delta_J1 == delta_J2
 
         # On remet les jetons dans le sac
@@ -674,6 +732,7 @@ def determine_tour(noms_joueurs, sac):
 
     - Préconditions:
         * "nb_joueurs" & "sac" -> list ;
+
     - Postcondition: 
         * "classement" -> list ;
 
@@ -690,9 +749,11 @@ def determine_tour(noms_joueurs, sac):
     for id_J1 in range( nb_joueurs ):
         nom_J1 = noms_joueurs[id_J1]
 
+        # On calcule la distance de la "lettre_J1" avec la lettre "A"
         lettre_J1 = pioche_sans_joker(nom_J1, sac_copy)
         delta_J1 = ord(lettre_J1) - ord("A")
         
+        # On récupère la liste des distances des anciens joueurs
         liste_deltas = list( joueurs_deltas.values() )
         
         # On parcourt "liste_deltas" pour voir si un jeton ne s'est pas répété
@@ -707,11 +768,13 @@ def determine_tour(noms_joueurs, sac):
         # Si un autre joueur a aussi pioché cette lettre on refait piocher les deux jusqu'à qu'ils aient des lettres différentes
         if doublon:
             nom_J2 = noms_joueurs[id_J2]
+            # On retire bien la "distance" de la lettre piochée par le J2
             liste_deltas.pop(id_J2)
 
             # On remet les jetons piochés dans le sac
             sac_copy.extend( [lettre_J1] * 2 )
 
+            # On refait jouer jusqu'à que les lettres soient différentes entre elles et de celles du sac
             delta_J1, delta_J2 = refaire_jouer(nom_J1, nom_J2, liste_deltas, sac_copy)
 
             joueurs_deltas[id_J2] = delta_J2
@@ -719,27 +782,31 @@ def determine_tour(noms_joueurs, sac):
         joueurs_deltas[id_J1] = delta_J1
         print()
 
-    # TODO: Méthode de trie faite à la main avec une complexité atroce (à améliorer) LE RESTE EST GOOD ON PEUT PAS FAIRE MIEUX
-    joueurs_deltas_triees = [ (num, scor) for num, scor in joueurs_deltas.items()]
+    # Tri par sélection ( ATTENTION C'EST UN PEU ABSTRAIT, juste un peu beaucoup :) )
+    liste_numeros = list( joueurs_deltas.keys() )
+    liste_deltas = list( joueurs_deltas.values() )
 
-    for i in range( len(joueurs_deltas_triees) ):
-        position_score_mini = joueurs_deltas_triees[i]
-        score_mini = position_score_mini[1]
+    for i in range( len(liste_numeros) - 1 ):
+        # On initialise le "delta_mini"
+        delta_mini = liste_deltas[i]
+        indice_mini = i
 
-        for j in range(i, len(joueurs_deltas_triees)):
-            position_score = joueurs_deltas_triees[j]
-            score = position_score[1]
+        # On cherche le "delta_mini" dans le reste de la liste non triée
+        for j in range( i + 1, len(liste_numeros) ):
+            delta = liste_deltas[j]
 
-            if score < score_mini:
-                position_score_mini = position_score
-                score_mini = score
+            if delta < delta_mini:
+                delta_mini = delta
+                indice_mini = j
 
-        joueurs_deltas_triees.remove(position_score_mini)
-        joueurs_deltas_triees.insert(i, position_score_mini)
+        # On échange les deux éléments afin d'avoir la partie triée à gauche de la liste (on s'assure d'avoir les couples numéros et deltas au même indice)
+        # même s'ils sont dans deux listes différentes ON NE VEUT SURTOUT PAS PERDRE L'ASSOCIATIVITE (NUMERO, DELTA)
+        liste_numeros[i], liste_numeros[indice_mini] = liste_numeros[indice_mini], liste_numeros[i] # Numéros
+        liste_deltas[i], liste_deltas[indice_mini] =  liste_deltas[indice_mini], liste_deltas[i]    # Deltas
 
     # On définit le classement final
     classement = []
-    for numero, score in joueurs_deltas_triees:
+    for numero in liste_numeros:
         classement.append(numero)
     
     return classement
@@ -761,8 +828,8 @@ def lire_coords():
     x = int( input("- Coordonnée x: ") )
     y = int( input("- Coordonnée y: ") )
 
-    # while (x < 0 or x >= TAILLE_PLATEAU) or (y < 0 or y >= TAILLE_PLATEAU):
-    while (x < 1 or x > TAILLE_PLATEAU) or (y < 1 or y > TAILLE_PLATEAU):
+    while (x < 0 or x >= TAILLE_PLATEAU) or (y < 0 or y >= TAILLE_PLATEAU):
+    # while (x < 1 or x > TAILLE_PLATEAU) or (y < 1 or y > TAILLE_PLATEAU):
         x = int( input("- Coordonnée x: ") )
         y = int( input("- Coordonnée y: ") )
     
@@ -833,6 +900,7 @@ def tester_placement(plateau, i, j, dir, mot):
     ["L", "A", "C"]
     
     """
+
     liste_lettres = []
     temp_liste_lettre = []
 
@@ -844,7 +912,6 @@ def tester_placement(plateau, i, j, dir, mot):
         parcourt_droite = TAILLE_PLATEAU - i - len(mot) >= 0
         ligne = plateau[j]
 
-        # if not placable_gauche and parcourt_droite:
         if parcourt_droite:
             placable_droite = True
 
@@ -1145,6 +1212,7 @@ def valeur_mot(plateau, plateau_bonus, positions_depart, direction, mot, dico):
         * "positions_depart" -> tuple ;
         * "direction" & "mot" -> str ;
         * "dico" -> dict ;
+
     - Postcondition:
         * "valeur" -> int ;
 
@@ -1238,6 +1306,7 @@ def tour_joueur(plt, plt_bonus, sac, infos_joueur):
     - Préconditions: 
         * "plt" & "plt_bonus" & "sac" -> list ;
         * "infos_joueur" -> dict ;
+        
     - Postcondition: //
 
     Q34) Gère le tour d'un joueur en lui proposant de proposer une lettre, de passer son tour ou de faire un échange
