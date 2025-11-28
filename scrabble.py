@@ -13,6 +13,7 @@ YYYY <prenom.nom@univ-grenoble-alpes.fr>
 
 from pathlib import Path  # gestion fichiers
 import random
+import copy
 
 # CONSTANTES ###################################################################
 
@@ -331,8 +332,8 @@ def select_mot_initiale(motsfr, let):
     """
 
     - Préconditions: 
-        "motsfr" -> list ; 
-        "let" -> str ;
+        * "motsfr" -> list ; 
+        * "let" -> str ;
 
     - Postcondition: 
         * "motsfr_let" -> list ;
@@ -357,9 +358,11 @@ def select_mot_longueur(motsfr, lgr):
     """
 
     - Préconditions: 
-        "motsfr" -> list ; 
-        "lgr" -> int ;
-    - Postcondition: "motsfr_lgr" -> list
+        * "motsfr" -> list ; 
+        * "lgr" -> int ;
+
+    - Postcondition:
+        * "motsfr_lgr" -> list ;
 
     Q14) Renvoie tous les mots possibles du scrabble où la longueur du mot est égale à "lgr"
 
@@ -419,8 +422,11 @@ def mot_jouable(mot, ll, check_joker = True):
 def mots_jouables(motsfr, ll):
     """
 
-    - Préconditions: "motsfr" & "ll" -> list ;
-    - Postcondition: "liste_mots" -> list
+    - Préconditions: 
+        * "motsfr" & "ll" -> list ;
+
+    - Postcondition: 
+        * "liste_mots" -> list ;
 
     Q16) Renvoie la liste des mots qu'on peut faire avec les lettres de notre main ("ll")
     
@@ -577,9 +583,11 @@ def meilleurs_mots(motsfr, ll, dico):
     """
 
     - Préconditions:
-        "dico" -> dict ;
-        "motsfr" & "ll" -> list ;
-    - Postcondition: "meilleur_mot" -> list
+        * "dico" -> dict ;
+        * "motsfr" & "ll" -> list ;
+
+    - Postcondition: 
+        * "meilleur_mot" -> list ;
 
     Q24) Détermine le(s) meilleur(s) mot(s) jouable(s)
     >>> motsfr = ["COURIR", "PIED", "DEPIT", "TAPIR", "MARCHER"]
@@ -828,8 +836,8 @@ def lire_coords():
     x = int( input("- Coordonnée x: ") )
     y = int( input("- Coordonnée y: ") )
 
-    while (x < 0 or x >= TAILLE_PLATEAU) or (y < 0 or y >= TAILLE_PLATEAU):
-    # while (x < 1 or x > TAILLE_PLATEAU) or (y < 1 or y > TAILLE_PLATEAU):
+    # while (x < 0 or x >= TAILLE_PLATEAU) or (y < 0 or y >= TAILLE_PLATEAU):
+    while (x < 1 or x > TAILLE_PLATEAU) or (y < 1 or y > TAILLE_PLATEAU):
         x = int( input("- Coordonnée x: ") )
         y = int( input("- Coordonnée y: ") )
     
@@ -968,7 +976,8 @@ def tester_placement(plateau, i, j, dir, mot):
 
     return liste_lettres
 
-def placer_mot(plateau, lm, mot, i, j, dir, dict_fr):
+# TODO: CLEANUP
+def placer_mot(plateau, lm, mot, i, j, dir, dict_fr, init):
     """
 
     - Préconditions:
@@ -976,6 +985,7 @@ def placer_mot(plateau, lm, mot, i, j, dir, dict_fr):
         * "i" & "j" -> int ;
         * "dir" & "mot" -> str ;
         * "dict_fr" -> dict ;
+        * "init" -> bool ; <optionnel>
 
     - Postcondition:
         * "sucess" -> bool ;
@@ -998,32 +1008,43 @@ def placer_mot(plateau, lm, mot, i, j, dir, dict_fr):
     On forme aussi trois autres mots, "LL", "AI", "CT" qui ne sont pas compatibles !
 
     """
+    lm_copy = lm.copy()
+    plateau_copy = copy.deepcopy(plateau)
 
-    plateau_copy = plateau.copy()
     lm_utilisees = []
 
-    liste_lettres = tester_placement(plateau, i, j, dir, mot)
+    liste_lettres = tester_placement(plateau_copy, i, j, dir, mot)
 
     horizontal = dir == "horizontal"
     vertical = dir == "vertical"
 
-    # vérifier que les élé de liste_lettres sont dans lm
+    # Si le mot est placable, et si c'est le premier mot, qu'il soit bien placé à l'aide d'un autre mot (si le premier mot est initialisé)
     success = liste_lettres != []
+
+    # Si le premier mot n'est pas initialisé, on vérifie si le mot passe bien par la case du milieu
+    if not init:
+        case_milieu = TAILLE_PLATEAU // 2 # on prend la valeur inférieure
+        success = success and ( (horizontal and j == case_milieu and i <= case_milieu < i + len(mot)) or (vertical and i == case_milieu and j <= case_milieu < j + len(mot)) )
+    
+    # Vérifie si la main dispose bien des lettres dont il a besoin
     k = 0
     while success and k < len(liste_lettres):
         lettre = liste_lettres[k]
-        success = success and lettre in lm
+        success = success and lettre in lm_copy
         if success:
-            liste_lettres.remove(lettre)
+            lm_copy.remove(lettre)
 
         k += 1
-        
+    
     # Signifie qu'on peut placer le mot ici
     if success:
-        
         x, y = i, j
 
-        collisions_horizontal_vertical = { "horizontal": [False, False], "vertical": [False, False] }
+        # On cherche s'il y a au moins une collision avec la lettre (evidemment si le plateau n'est pas initialisé, on retourne TRUE)
+        mini_une_collision = not init
+
+        # Les collisions au début du mot et à la fin du mot
+        collisions_debut_fin = { dir: [False, False] }
 
         collision_lettres = []
         for lettre in mot:
@@ -1037,22 +1058,27 @@ def placer_mot(plateau, lm, mot, i, j, dir, dict_fr):
                     lm_utilisees.append(lettre)
                     lm.remove(lettre)
 
+            # Vérif si il y a une lettre en haut de la lettre du mot
+            if 0 <= y - 1 < TAILLE_PLATEAU:
+                collision_haut = plateau_copy[y-1][x] != " "
+            # Vérif si il y a une lettre en bas de la lettre du mot
+            if 0 <= y + 1 < TAILLE_PLATEAU:
+                collided_bas = plateau_copy[y+1][x] != " "
+
+            # Vérif si il y a une lettre à gauche de la lettre du mot
+            if 0 <= x - 1 < TAILLE_PLATEAU:
+                collided_gauche = plateau_copy[y][x-1] != " "
+            # Vérif si il y a une lettre à droite de la lettre du mot
+            if 0 <= x + 1 < TAILLE_PLATEAU:
+                collided_droite = plateau_copy[y][x+1] != " "
+
             if horizontal:
                 # Vérif si il y a une lettre à gauche du début du mot
                 if x == i:
-                    collided_gauche = 0 <= x - 1 < TAILLE_PLATEAU and plateau_copy[y][x-1] != " "
-                    collisions_horizontal_vertical[dir][0] = collided_gauche
+                    collisions_debut_fin[dir][0] = collided_gauche
                 # Vérif si il y a une lettre à droite de la fin du mot
                 elif x == i + len(mot) - 1:
-                    collided_droite = 0 <= x + len(mot) - 1 < TAILLE_PLATEAU and plateau_copy[y][x + len(mot) - 1 ] != " "
-                    collisions_horizontal_vertical[dir][1] = collided_droite
-
-                # Vérif si il y a une lettre en haut de la lettre du mot
-                if 0 <= y - 1 < TAILLE_PLATEAU:
-                    collision_haut = plateau_copy[y-1][x] != " "
-                # Vérif si il y a une lettre en bas de la lettre du mot
-                if 0 <= y + 1 < TAILLE_PLATEAU:
-                    collided_bas = plateau_copy[y+1][x] != " "
+                    collisions_debut_fin[dir][1] = collided_droite
 
                 collision_lettres.append( (collided_haut, collided_bas) )
                 x += 1
@@ -1060,28 +1086,23 @@ def placer_mot(plateau, lm, mot, i, j, dir, dict_fr):
             if vertical:
                 # Vérif si il y a une lettre en haut du début du mot
                 if y == j:
-                    collided_haut = 0 <= y - 1 < TAILLE_PLATEAU and plateau_copy[y - 1][x] != " "
-                    collisions_horizontal_vertical[dir][0] = collided_haut
+                    collisions_debut_fin[dir][0] = collided_haut
                 # Vérif si il y a une lettre à droite de la fin du mot
                 elif y == j + len(mot) - 1:
-                    collided_bas = 0 <= y + len(mot) - 1 < TAILLE_PLATEAU and plateau_copy[y + len(mot) - 1][x] != " "
-                    collisions_horizontal_vertical[dir][1] = collided_bas
-
-                if 0 <= x - 1 < TAILLE_PLATEAU:
-                    collided_gauche = plateau_copy[y][x-1] != " "
-                if 0 <= x + 1 < TAILLE_PLATEAU:
-                    collided_droite = plateau_copy[y][x+1] != " "
-
-                y += 1
+                    collisions_debut_fin[dir][1] = collided_bas
+                    
                 collision_lettres.append( (collided_gauche, collided_droite) )
+                y += 1
         
+            mini_une_collision = mini_une_collision or (collided_gauche or collided_droite or collided_haut or collided_bas)
 
+        success = mini_une_collision
 
         """
         Si le mot placé est à l'horizontal
         """
-        if horizontal:
-            collided_gauche, collided_droite = collisions_horizontal_vertical[dir]
+        if success and horizontal:
+            collided_gauche, collided_droite = collisions_debut_fin[dir]
 
             # Verification 1) : On vérifie la ligne où on a posé notre lettre
             mot_forme = mot
@@ -1140,8 +1161,8 @@ def placer_mot(plateau, lm, mot, i, j, dir, dict_fr):
         Si le mot placé est à la verticale, on effectue la meme chose que pour l'horizontal,
         sauf qu'ici les indices ne sont pas les memes
         """
-        if vertical:
-            collided_haut, collided_bas = collisions_horizontal_vertical[dir]
+        if success and vertical:
+            collided_haut, collided_bas = collisions_debut_fin[dir]
 
             # Verification 1) : On vérifie si les lettres qu'on a posé forment un nouveau mot composés des lettres d'en haut ou en bas
             mot_forme = mot
@@ -1196,7 +1217,16 @@ def placer_mot(plateau, lm, mot, i, j, dir, dict_fr):
 
     # Si c'est OK, on update le plateau
     if success:
-        plateau = plateau_copy.copy()
+
+        # On reforme le tableauen ajoutant le mot
+        x, y = i, j
+        for lettre in mot:
+            plateau[y][x] = lettre
+
+            if horizontal:
+                x += 1
+            else:
+                y += 1
 
     # Sinon, on remet les lettres utilisées dans la main du joueur
     else:
@@ -1295,15 +1325,16 @@ def get_lettres_plateau(plateau):
         for x in range(TAILLE_PLATEAU):
             lettre = plateau[y][x]
 
-            if lettre not in lettres:
+            if lettre != " " and lettre not in lettres:
                 lettres.append(lettre)
     
     return lettres
 
-def tour_joueur(plt, plt_bonus, sac, infos_joueur):
+def tour_joueur(tour, plt, plt_bonus, sac, infos_joueur):
     """
     
     - Préconditions: 
+        * "tout" -> int ;
         * "plt" & "plt_bonus" & "sac" -> list ;
         * "infos_joueur" -> dict ;
         
@@ -1394,12 +1425,16 @@ def tour_joueur(plt, plt_bonus, sac, infos_joueur):
 
             # Définie la position du mot
             x, y = lire_coords()
+
+            # On passe les coordonnées en indice pour le Plateau
             x -= 1
             y -= 1
 
-            mot_bien_place = placer_mot(plt, main, mot_sans_joker, x, y, direction, dict_fr)
+            init = tour != 0
+            mot_bien_place = placer_mot(plt, main, mot_sans_joker, x, y, direction, dict_fr, init)
 
         # Ajout des scores
+        print(plt)
         val_mot = valeur_mot(plt, plt_bonus, (x, y), direction, mot, dict_val_lettres)
 
         print(f"[PROPOSITION] Le mot que vous avez choisi vous rapporte {val_mot} points")
@@ -1472,7 +1507,7 @@ def programme_principal():
         print("- Le plateau:")
         affiche_jetons(plt)
 
-        tour_joueur(plt, plt_bonus, sac, joueur_infos)
+        tour_joueur(tour, plt, plt_bonus, sac, joueur_infos)
 
         score = joueur_infos[2]
         print(f"[FIN TOUR] {nom} Vous finissez avec un score | SCORE {score} |")
